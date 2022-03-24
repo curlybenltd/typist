@@ -106,6 +106,7 @@ if (import.meta.vitest) {
     };
 
     type expectedFruitType = { colour?: string, size: number, segments?: number }
-    expect<{ colour?: string, size: number, segments?: number }>(f);
+    
+    expect<expectedFruitType>(f);
 
 }
