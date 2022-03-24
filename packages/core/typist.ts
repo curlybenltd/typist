@@ -84,7 +84,7 @@ if (import.meta.vitest) {
 
     const _int = (n: number): boolean => {
         if (_number(n)) {
-            if (parseInt(n.toString()).toString() === n.toString()) {
+            if (parseInt(n.toString()) - n === 0) {
                 return true;
             }
         }
@@ -106,7 +106,7 @@ if (import.meta.vitest) {
     };
 
     type expectedFruitType = { colour?: string, size: number, segments?: number }
-    
+
     expect<expectedFruitType>(f);
 
 }
