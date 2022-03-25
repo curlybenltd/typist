@@ -82,13 +82,26 @@ export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription
 
 export type ValueType<Type> = (value: Type) => boolean;
 
-export const types = {
-    $optional: <V>(test: (value: V) => boolean) => ((value?: V) => typeof value === "undefined" ? true : test(value)) as ValueType<V | undefined>,
-    $string: ((value: string) => typeof value === "string") as ValueType<string>,
-    $number: ((n: number) => typeof n === "number") as ValueType<number>,
-    $int: ((n: number) => Number.isInteger(n)) as ValueType<number>,
-}
-
 export type InputOf<C extends Creator<any>> = Parameters<C>[0]
 
 export type TypeFrom<C extends TypeModule<any>> = InputOf<C["create"]>
+
+type Factors<T> = {
+    [key in keyof T as `$${string & key}`]: T[key]
+}
+
+export const factor = <T>(factors: T): Factors<T> => {
+    return Object.entries(factors).reduce((f, [k, v]) => {
+        Object.assign(v, {
+            __factor: k
+        })
+        return ({ ...f, [`$${k}`]: v })
+    }, {} as Factors<T>)
+}
+
+export const types = factor({
+    optional: <V>(test: (value: V) => boolean) => ((value?: V) => typeof value === "undefined" ? true : test(value)) as ValueType<V | undefined>,
+    string: ((value: string) => typeof value === "string") as ValueType<string>,
+    number: ((n: number) => typeof n === "number") as ValueType<number>,
+    int: ((n: number) => Number.isInteger(n)) as ValueType<number>,
+})
