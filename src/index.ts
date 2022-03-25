@@ -1,4 +1,4 @@
-import { Option, Result } from "@swan-io/boxed"
+import { Result } from "@swan-io/boxed"
 
 type RequiredKeys<T> = {
     [P in keyof T]: T[P] extends Exclude<T[P], undefined> ? P : never
@@ -33,12 +33,14 @@ type Parser<TypeDescription> = (str: string) => Result<UserType<TypeDescription>
 
 type Stringifier<TypeDescription> = (value: UserType<TypeDescription>) => Result<string, ValidationErrors<TypeDescription>>
 
-export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription>): {
+type TypeModule<TypeDescription> = {
     create: Creator<TypeDescription>,
     validate: Validator<TypeDescription>,
     parse: Parser<TypeDescription>,
     stringify: Stringifier<TypeDescription>,
-} => {
+}
+
+export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription>): TypeModule<TypeDescription> => {
 
     const create: Creator<TypeDescription> = (type) => {
         return validate(type).match({
@@ -88,3 +90,5 @@ export const types = {
 }
 
 export type InputOf<C extends Creator<any>> = Parameters<C>[0]
+
+export type TypeFrom<C extends TypeModule<any>> = InputOf<C["create"]>
