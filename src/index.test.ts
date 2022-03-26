@@ -1,5 +1,5 @@
 import { Result } from "@swan-io/boxed";
-import { test, expect, describe } from "vitest"
+import { test, expect, describe, fn } from "vitest"
 import { types, typist, factor, InputOf, ValueType, TypeFrom } from "."
 const { $optional, $string } = types;
 
@@ -82,8 +82,8 @@ describe("island fruit", () => {
     })
 })
 
-describe("", () => {
-    test("", () => {
+describe("creating custom factors", () => {
+    test("create a range factor and verify it works", () => {
 
         const { $range } = factor({
             range: (min: number, max: number): ValueType<number> => (n: number) => {
@@ -91,14 +91,22 @@ describe("", () => {
             }
         })
 
-        const endpointModule = typist({
+        const { create: createEndpoint } = typist({
             port: $range(2000, 2999)
         })
 
-        endpointModule.create({
+        createEndpoint({
             port: 1000
         }).match({
-            
+            Error: error => expect(error).toStrictEqual({ port: "invalid" }),
+            Ok: fn()
+        })
+
+        createEndpoint({
+            port: 2000
+        }).match({
+            Error: fn(),
+            Ok: value => expect(value).toStrictEqual({ port: 2000 })
         })
     })
 })
