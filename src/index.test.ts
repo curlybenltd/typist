@@ -94,5 +94,11 @@ describe("", () => {
         const endpointModule = typist({
             port: $range(2000, 2999)
         })
+
+        endpointModule.create({
+            port: 1000
+        }).match({
+            
+        })
     })
 })
