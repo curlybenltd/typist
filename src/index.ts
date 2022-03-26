@@ -120,15 +120,15 @@ export type TypeFrom<C extends TypeModule<any>> = InputOf<C["create"]>
 
 type Factors<T> = {
     [key in keyof T as `$${string & key}`]: T[key] extends [infer F, JtdType] ? (
-        F extends ((...args: infer OF) => (tf: infer TF) => boolean)
-        ? (...args: OF) => ValueType<TF>
-        : F extends ((tf: infer TF) => boolean)
-        ? ValueType<TF>
+        F extends ((...args: infer OF) => ValueType<infer TF>)
+        ? F
+        : F extends ValueType<infer A>
+        ? ValueType<A>
         : never
     ) :
-    T[key] extends ((...args: infer OF) => (tf: infer TF) => boolean)
+    T[key] extends ((...args: infer OF) => ValueType<infer TF>)
     ? T[key]
-    : T[key] extends (arg: infer A) => boolean
+    : T[key] extends ValueType<infer A>
     ? ValueType<A>
     : never
 }
