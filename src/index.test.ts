@@ -4,7 +4,7 @@ import { types, typist, factor, InputOf, ValueType } from "."
 const { $optional, $string } = types;
 
 const { $country } = factor({
-    country: (value: string) => {
+    country: [(value: string) => {
         if ($string(value)) {
             return [
                 "UK",
@@ -20,7 +20,7 @@ const { $country } = factor({
             ].includes(value.toLocaleUpperCase())
         }
         return false;
-    }
+    }, "$string"]
 })
 
 const fruitModule = typist({

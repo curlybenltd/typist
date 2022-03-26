@@ -75,13 +75,13 @@ export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription
 
     const toJSONTypeDef = () => {
         return Object.entries(describeType).reduce((schema, [name, prop]) => {
-            if (prop.__jtdType.startsWith("$optional")) {
+            if (getFlag(prop, "optional")) {
                 return ({
                     ...schema,
                     optionalProperties: {
                         ...schema.optionalProperties,
                         [name]: {
-                            type: prop.__jtdType?.substring(10)
+                            type: (prop as any).__jtdType?.substring(1)
                         }
                     },
                 })
@@ -91,11 +91,11 @@ export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription
                 properties: {
                     ...schema.properties,
                     [name]: {
-                        type: prop.__jtdType?.substring(1)
+                        type: (prop as any).__jtdType?.substring(1)
                     }
                 },
             })
-        }, {})
+        }, {} as JsonTypeDef)
     }
 
     return {
@@ -107,6 +107,11 @@ export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription
     }
 }
 
+export type JsonTypeDef = {
+    properties: any,
+    optionalProperties: any
+}
+
 export type ValueType<Type> = (value: Type) => boolean;
 
 export type InputOf<C extends Creator<any>> = Parameters<C>[0]
@@ -114,22 +119,48 @@ export type InputOf<C extends Creator<any>> = Parameters<C>[0]
 export type TypeFrom<C extends TypeModule<any>> = InputOf<C["create"]>
 
 type Factors<T> = {
-    [key in keyof T as `$${string & key}`]: T[key]
+    [key in keyof T as `$${string & key}`]: T[key] extends [infer F, JtdType] ? (
+        F extends ((tf: infer TF) => (...args: any[]) => boolean)
+        ? F
+        : F extends ((tf: infer TF) => boolean)
+        ? ValueType<TF>
+        : never
+    ) :
+    T[key] extends ((tf: infer TF) => (...args: any[]) => boolean)
+    ? T[key]
+    : T[key] extends (arg: infer A) => boolean
+    ? ValueType<A>
+    : never
 }
 
-export const factor = <T extends { [key: string]: (ValueType<any> | ((arg: ValueType<any>) => ValueType<any>)) }>(factors: T): Factors<T> => {
+export const factor = <T extends { [key: string]: (F | [F, JtdType]) }, F = (ValueType<any> | ((arg: ValueType<any>) => ValueType<any>))>(factors: T): Factors<T> => {
     return Object.entries(factors).reduce((f, [k, v]) => {
+        if (Array.isArray(v)) {
+            [v] = v
+            return ({ ...f, [`$${k}`]: setJtdType(v, (v as any).__jtdType ? `$${(v as any).__jtdType}(${k})` : `$${k}`) })
+        }
         return ({ ...f, [`$${k}`]: setJtdType(v, (v as any).__jtdType ? `$${(v as any).__jtdType}(${k})` : `$${k}`) })
     }, {} as Factors<T>)
 }
 
-const setJtdType = <X>(x: X, __jtdType: string): X => {
+export type JtdType = "$boolean" | "$string" | "$timestamp" | "$float32" | "$float64" | "$int8" | "$uint8" | "$int16" | "$uint16" | "$int32" | "$uint32";
+
+const setJtdType = <X>(x: X, __jtdType: JtdType | string): X => {
     Object.assign(x, { __jtdType })
     return x
 }
 
+const setFlag = <X>(x: X, flag: string, value: any): X => {
+    Object.assign(x, { [`__${flag}`]: value })
+    return x
+}
+
+const getFlag = (x: any, flag: string) => {
+    return x[`__${flag}`]
+}
+
 export const types = factor({
-    optional: <V>(test: (value: V) => boolean) => setJtdType((value?: V) => typeof value === "undefined" ? true : test(value), `$optional${(test as any).__jtdType}`) as ValueType<V | undefined>,
+    optional: <V>(test: (value: V) => boolean) => setFlag(setJtdType((value?: V) => typeof value === "undefined" ? true : test(value), `${(test as any).__jtdType}`), "optional", true) as ValueType<V | undefined>,
     string: ((value: string) => typeof value === "string") as ValueType<string>,
     number: ((n: number) => typeof n === "number") as ValueType<number>,
     int: ((n: number) => Number.isInteger(n)) as ValueType<number>,
