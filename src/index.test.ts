@@ -1,6 +1,6 @@
 import { Result } from "@swan-io/boxed";
 import { test, expect, describe } from "vitest"
-import { types, typist, factor, InputOf, ValueType } from "."
+import { types, typist, factor, InputOf, ValueType, TypeFrom } from "."
 const { $optional, $string } = types;
 
 
@@ -33,6 +33,8 @@ describe("island fruit", () => {
         tree: $optional($string),
     })
 
+    type Fruit = TypeFrom<typeof fruitModule>
+
     const { create: createFruit, validate: validateFruit } = fruitModule;
 
     test("a bad apple", () => {
@@ -40,7 +42,7 @@ describe("island fruit", () => {
             name: "apple",
             colour: "green",
             countryOfOrigin: "spain"
-        })
+        } as Fruit)
         expect(badApple).toStrictEqual(Result.Error({ countryOfOrigin: "invalid" }))
     })
 
