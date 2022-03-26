@@ -38,6 +38,7 @@ type TypeModule<TypeDescription> = {
     validate: Validator<TypeDescription>,
     parse: Parser<TypeDescription>,
     stringify: Stringifier<TypeDescription>,
+    toJSONTypeDef: () => {}
 }
 
 export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription>): TypeModule<TypeDescription> => {
@@ -72,11 +73,37 @@ export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription
         })
     }
 
+    const toJSONTypeDef = () => {
+        return Object.entries(describeType).reduce((schema, [name, prop]) => {
+            if (prop.__jtdType.startsWith("$optional")) {
+                return ({
+                    ...schema,
+                    optionalProperties: {
+                        ...schema.optionalProperties,
+                        [name]: {
+                            type: prop.__jtdType?.substring(10)
+                        }
+                    },
+                })
+            }
+            return ({
+                ...schema,
+                properties: {
+                    ...schema.properties,
+                    [name]: {
+                        type: prop.__jtdType?.substring(1)
+                    }
+                },
+            })
+        }, {})
+    }
+
     return {
         create,
         validate,
         parse,
         stringify,
+        toJSONTypeDef,
     }
 }
 
@@ -90,17 +117,19 @@ type Factors<T> = {
     [key in keyof T as `$${string & key}`]: T[key]
 }
 
-export const factor = <T>(factors: T): Factors<T> => {
+export const factor = <T extends { [key: string]: (ValueType<any> | ((arg: ValueType<any>) => ValueType<any>)) }>(factors: T): Factors<T> => {
     return Object.entries(factors).reduce((f, [k, v]) => {
-        Object.assign(v, {
-            __factor: k
-        })
-        return ({ ...f, [`$${k}`]: v })
+        return ({ ...f, [`$${k}`]: setJtdType(v, (v as any).__jtdType ? `$${(v as any).__jtdType}(${k})` : `$${k}`) })
     }, {} as Factors<T>)
 }
 
+const setJtdType = <X>(x: X, __jtdType: string): X => {
+    Object.assign(x, { __jtdType })
+    return x
+}
+
 export const types = factor({
-    optional: <V>(test: (value: V) => boolean) => ((value?: V) => typeof value === "undefined" ? true : test(value)) as ValueType<V | undefined>,
+    optional: <V>(test: (value: V) => boolean) => setJtdType((value?: V) => typeof value === "undefined" ? true : test(value), `$optional${(test as any).__jtdType}`) as ValueType<V | undefined>,
     string: ((value: string) => typeof value === "string") as ValueType<string>,
     number: ((n: number) => typeof n === "number") as ValueType<number>,
     int: ((n: number) => Number.isInteger(n)) as ValueType<number>,
