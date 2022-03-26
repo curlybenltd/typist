@@ -133,7 +133,9 @@ type Factors<T> = {
     : never
 }
 
-export const factor = <T extends { [key: string]: (F | [F, JtdType]) }, F = (ValueType<any> | ((...args: any[]) => ValueType<any>))>(factors: T): Factors<T> => {
+export const factor = <T extends { 
+    [key: string]: (F | [F, JtdType]) 
+}, F extends (ValueType<any> | ((...args: any[]) => ValueType<any>))>(factors: T): Factors<T> => {
     return Object.entries(factors).reduce((exports, [name, valueType]) => {
         if (Array.isArray(valueType)) {
             let [tupledValue, jtdType] = valueType

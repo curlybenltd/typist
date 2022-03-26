@@ -84,7 +84,7 @@ describe("", () => {
     test("", () => {
 
         const { $range } = factor({
-            range: (min: number, max: number) => (n: number) => {
+            range: (min: number, max: number): ValueType<number> => (n: number) => {
                 return n >= min && n <= max;
             }
         })
