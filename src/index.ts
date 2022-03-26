@@ -38,7 +38,7 @@ type TypeModule<TypeDescription> = {
     validate: Validator<TypeDescription>,
     parse: Parser<TypeDescription>,
     stringify: Stringifier<TypeDescription>,
-    toJSONTypeDef: () => {}
+    toTypeDef: () => {}
 }
 
 export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription>): TypeModule<TypeDescription> => {
@@ -73,7 +73,7 @@ export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription
         })
     }
 
-    const toJSONTypeDef = () => {
+    const toTypeDef = () => {
         return Object.entries(describeType).reduce((schema, [name, prop]) => {
             if (getFlag(prop, "optional")) {
                 return ({
@@ -95,7 +95,7 @@ export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription
                     }
                 },
             })
-        }, {} as JsonTypeDef)
+        }, {} as TypeDef)
     }
 
     return {
@@ -103,11 +103,11 @@ export const typist = <TypeDescription>(describeType: SchemaFrom<TypeDescription
         validate,
         parse,
         stringify,
-        toJSONTypeDef,
+        toTypeDef,
     }
 }
 
-export type JsonTypeDef = {
+export type TypeDef = {
     properties: any,
     optionalProperties: any
 }
@@ -120,26 +120,26 @@ export type TypeFrom<C extends TypeModule<any>> = InputOf<C["create"]>
 
 type Factors<T> = {
     [key in keyof T as `$${string & key}`]: T[key] extends [infer F, JtdType] ? (
-        F extends ((tf: infer TF) => (...args: any[]) => boolean)
-        ? F
+        F extends ((...args: infer OF) => (tf: infer TF) => boolean)
+        ? (...args: OF) => ValueType<TF>
         : F extends ((tf: infer TF) => boolean)
         ? ValueType<TF>
         : never
     ) :
-    T[key] extends ((tf: infer TF) => (...args: any[]) => boolean)
+    T[key] extends ((...args: infer OF) => (tf: infer TF) => boolean)
     ? T[key]
     : T[key] extends (arg: infer A) => boolean
     ? ValueType<A>
     : never
 }
 
-export const factor = <T extends { [key: string]: (F | [F, JtdType]) }, F = (ValueType<any> | ((arg: ValueType<any>) => ValueType<any>))>(factors: T): Factors<T> => {
-    return Object.entries(factors).reduce((f, [k, v]) => {
-        if (Array.isArray(v)) {
-            [v] = v
-            return ({ ...f, [`$${k}`]: setJtdType(v, (v as any).__jtdType ? `$${(v as any).__jtdType}(${k})` : `$${k}`) })
+export const factor = <T extends { [key: string]: (F | [F, JtdType]) }, F = (ValueType<any> | ((...args: any[]) => ValueType<any>))>(factors: T): Factors<T> => {
+    return Object.entries(factors).reduce((exports, [name, valueType]) => {
+        if (Array.isArray(valueType)) {
+            let [tupledValue, jtdType] = valueType
+            return ({ ...exports, [`$${name}`]: setJtdType(tupledValue, (tupledValue as any).__jtdType ? `$${(tupledValue as any).__jtdType}(${jtdType})` : `${jtdType}`) })
         }
-        return ({ ...f, [`$${k}`]: setJtdType(v, (v as any).__jtdType ? `$${(v as any).__jtdType}(${k})` : `$${k}`) })
+        return ({ ...exports, [`$${name}`]: setJtdType(valueType, (valueType as any).__jtdType ? `$${(valueType as any).__jtdType}(${name})` : `$${name}`) })
     }, {} as Factors<T>)
 }
 
