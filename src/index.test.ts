@@ -25,7 +25,7 @@ describe("island fruit", () => {
                         return Result.Ok(value);
                     }
                 }
-                return Invalid;
+                return Invalid<string>();
             }) as ValueType<string>, "string"]
     })
 
@@ -46,7 +46,7 @@ describe("island fruit", () => {
             colour: "green",
             countryOfOrigin: "spain"
         } as Fruit)
-        expect(badApple).toStrictEqual(Result.Error({ countryOfOrigin: "invalid" }))
+        expect(badApple).toStrictEqual(Result.Error({ countryOfOrigin: new Error("invalid") }))
     })
 
     test("blackberries!", () => {
@@ -58,7 +58,7 @@ describe("island fruit", () => {
         expect(blackberries).toStrictEqual(Result.Ok({ colour: "purple", countryOfOrigin: "england", name: "blackberry" }))
     })
 
-    test.only("validation", () => {
+    test("validation", () => {
         type IslandFruit = InputOf<typeof fruit>;
         const banana = {
             name: "banana",
@@ -90,22 +90,25 @@ describe("creating custom factors", () => {
 
         const { range } = factor({
             range: (min: number, max: number): ValueType<number> => (n: number) => {
-                return n >= min && n <= max;
+                return n >= min && n <= max ? Result.Ok(n) : Invalid<number>()
             }
         })
 
         const { create: endpoint } = type({
+            host: string,
             port: range(2000, 2999)
         })
 
         endpoint({
+            host: "localhost",
             port: 1000
         }).match({
-            Error: error => expect(error).toStrictEqual({ port: "invalid" }),
+            Error: error => expect(error).toStrictEqual({ port: new Error("invalid") }),
             Ok: fn()
         })
 
         endpoint({
+            host: "localhost",
             port: 2000
         }).match({
             Error: fn(),

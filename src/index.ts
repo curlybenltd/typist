@@ -161,7 +161,7 @@ const getFlag = (x: any, flag: string) => {
     return x[`__${flag}`]
 }
 
-export const Invalid = Result.Error(new Error("invalid"));
+export const Invalid = <T>() => Result.Error<T, Error>(new Error("invalid"));
 
 export const types = factor({
     optional: <V>(test: ValueType<V>): ValueType<Option<V>> => {

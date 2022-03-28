@@ -8,6 +8,7 @@ typist was written to be a pleasant alternative to duplicating type knowledge ac
 
 To make things nicer typist uses [@swan-io/boxed](https://swan-io.github.io/boxed/) to make handling the unhappy path as much fun as the happy path. No null checks, no accidental nulls!
 
+Where TypeScript has you **declare** types, typist let's you **create** them: `type Thing = {...}` becomes `const ThingModule = type({...})`!
 
 ## How To: A Fruit Type
 
@@ -32,7 +33,7 @@ To create the typist module, we import the `typist` function and pass it a type 
 import { typist, types } from "@curlyben/typist"
 const { string, optional } = types
 
-const FruitModule = typist({
+const FruitModule = type({
     name: string,
     colour: string,
     countryOfOrigin: string,
@@ -55,6 +56,7 @@ In your IDE you'll notice that hovering over `Fruit` reveals that it is the shap
 
 ![](hover-fruit-vscode.png)
 
+Next, you've probably noticed that `type?` optional fields have been rewritten as `optional(type)`. This is because typist uses functions to build types while keeping the syntax as close as possible to the type syntax of TypeScript.
 
 ```
 // 2: create things
