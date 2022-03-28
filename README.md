@@ -30,13 +30,13 @@ To create the typist module, we import the `typist` function and pass it a type 
 
 ```TypeScript
 import { typist, types } from "@curlyben/typist"
-const { $string, $optional } = types
+const { string, optional } = types
 
 const FruitModule = typist({
-    name: $string,
-    colour: $string,
-    countryOfOrigin: $string,
-    tree: $optional($string),
+    name: string,
+    colour: string,
+    countryOfOrigin: string,
+    tree: optional(string),
 })
 ```
 
