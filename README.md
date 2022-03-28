@@ -30,7 +30,7 @@ With typist, we're going to create a type module _instead_. This module gives us
 To create the typist module, we import the `typist` function and pass it a type description:
 
 ```TypeScript
-import { typist, types } from "@curlyben/typist"
+import { type, types } from "@curlyben/typist"
 const { string, optional } = types
 
 const FruitModule = type({
@@ -41,7 +41,7 @@ const FruitModule = type({
 })
 ```
 
-The first thing you'll notice is that there isn't an exportable fruit type. We don't always need a type, but if we do, we can capture one with the `InputOf<T>` or `TypeFrom<T>` utility like so:
+You'll notice in the above example that there isn't an exportable fruit type. We don't always need a type, but if we do, we can capture one with the `InputOf<T>` or `TypeFrom<T>` utility like so:
 
 ```TypeScript
 import { InputOf } from "@curlyben/typist"

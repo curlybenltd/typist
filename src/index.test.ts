@@ -25,7 +25,7 @@ describe("island fruit", () => {
                         return Result.Ok(value);
                     }
                 }
-                return Invalid<string>();
+                return Result.Error(new Error("wrong type"));
             }) as ValueType<string>, "string"]
     })
 
@@ -112,7 +112,7 @@ describe("creating custom factors", () => {
             port: 2000
         }).match({
             Error: fn(),
-            Ok: value => expect(value).toStrictEqual({ port: 2000 })
+            Ok: value => expect(value).toStrictEqual({ host: "localhost", port: 2000 })
         })
     })
 })
