@@ -1,7 +1,8 @@
 import { Result } from "@swan-io/boxed";
 import { test, expect, describe, fn } from "vitest"
-import { types, type, factor, InputOf, ValueType, TypeFrom, Invalid } from "."
-const { optional, string } = types;
+import { BaseFactors, type, factor, InputOf, FactorOf, TypeFrom, Invalid, Operators } from "."
+const { string } = BaseFactors;
+const { optional } = Operators;
 
 
 describe("island fruit", () => {
@@ -24,9 +25,11 @@ describe("island fruit", () => {
                     if (ok) {
                         return Result.Ok(value);
                     }
+                } else {
+                    return Result.Error(new Error("wrong type"));
                 }
-                return Result.Error(new Error("wrong type"));
-            }) as ValueType<string>, "string"]
+                return Invalid<string>()
+            }) as FactorOf<string>, "string"]
     })
 
     const fruitModule = type({
@@ -66,7 +69,7 @@ describe("island fruit", () => {
             countryOfOrigin: ["indonesia", "philippines"],
             tree: "banana"
         }
-        expect(validateFruit(banana as any as IslandFruit)).toEqual(Result.Error({ countryOfOrigin: new Error("invalid") }))
+        expect(validateFruit(banana as any as IslandFruit)).toEqual(Result.Error({ countryOfOrigin: new Error("wrong type") }))
     })
 
     test("describe", () => {
@@ -89,7 +92,7 @@ describe("creating custom factors", () => {
     test("create a range factor and verify it works", () => {
 
         const { range } = factor({
-            range: (min: number, max: number): ValueType<number> => (n: number) => {
+            range: (min: number, max: number): FactorOf<number> => (n: number) => {
                 return n >= min && n <= max ? Result.Ok(n) : Invalid<number>()
             }
         })

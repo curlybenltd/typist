@@ -1,15 +1,16 @@
 import { Result, Option } from "@swan-io/boxed"
+import { describe, test } from "vitest"
 
 type RequiredKeys<T> = {
-    [P in keyof T]: T[P] extends ValueType<Option<any>> ? never : P
+    [P in keyof T]: T[P] extends FactorOf<Option<any>> ? never : P
 }[keyof T]
 
 type SchemaFrom<TypeDescription> = {
-    [key in keyof TypeDescription]: TypeDescription[key] extends ValueType<any> ? TypeDescription[key] : never
+    [key in keyof TypeDescription]: TypeDescription[key] extends FactorOf<any> ? TypeDescription[key] : never
 }
 
 type ExtractRuntimeType<DescribedType> = {
-    [key in keyof DescribedType]: DescribedType[key] extends ValueType<infer ValueIn> ? ValueIn extends Option<infer InnerValueIn> ? InnerValueIn : ValueIn : never
+    [key in keyof DescribedType]: DescribedType[key] extends FactorOf<infer ValueIn> ? ValueIn extends Option<infer InnerValueIn> ? InnerValueIn : ValueIn : never
 }
 
 type IntermediateRuntimeType<RuntimeType> = Partial<ExtractRuntimeType<RuntimeType>> & Pick<ExtractRuntimeType<RuntimeType>, RequiredKeys<RuntimeType>>
@@ -52,7 +53,7 @@ export const type = <TypeDescription>(describeType: SchemaFrom<TypeDescription>)
 
     const validate: Validator<TypeDescription> = (type) => {
         const invalid = Object.entries(describeType).map(([prop, validator]) => {
-            return { prop, valid: (validator as ValueType<any>)((type as any)[prop]) }
+            return { prop, valid: (validator as FactorOf<any>)((type as any)[prop]) }
         }).filter(({ valid }) => !valid.isOk())
             .reduce((all, { prop, valid }) => ({ ...all, [prop]: valid.match({ Error: error => error, Ok: _ => _ }) }), {} as ValidationErrors<TypeDescription>)
         if (Object.entries(invalid).length) {
@@ -112,7 +113,7 @@ export type TypeDef = {
     optionalProperties: any
 }
 
-export type ValueType<Type> = (value: Type) => Result<Type, Error>;
+export type FactorOf<Type> = (value: Type) => Result<Type, Error>;
 
 export type InputOf<C extends Creator<any>> = Parameters<C>[0]
 
@@ -120,22 +121,22 @@ export type TypeFrom<C extends TypeModule<any>> = InputOf<C["create"]>
 
 type Factors<T> = {
     [key in keyof T as `${string & key}`]: T[key] extends [infer F, JtdType] ? (
-        F extends ((...args: infer OF) => ValueType<infer TF>)
+        F extends ((...args: infer OF) => FactorOf<infer TF>)
         ? F
-        : F extends ValueType<infer A>
-        ? ValueType<A>
+        : F extends FactorOf<infer A>
+        ? FactorOf<A>
         : never
     ) :
-    T[key] extends ((...args: infer OF) => ValueType<infer TF>)
+    T[key] extends ((...args: infer OF) => FactorOf<infer TF>)
     ? T[key]
-    : T[key] extends ValueType<infer A>
-    ? ValueType<A>
+    : T[key] extends FactorOf<infer A>
+    ? FactorOf<A>
     : never
 }
 
 export const factor = <T extends {
     [key: string]: (F | [F, JtdType])
-}, F extends (ValueType<any> | ((...args: any[]) => ValueType<any>))>(factors: T): Factors<T> => {
+}, F extends (FactorOf<any> | ((...args: any[]) => FactorOf<any>))>(factors: T): Factors<T> => {
     return Object.entries(factors).reduce((exports, [name, valueType]) => {
         if (Array.isArray(valueType)) {
             let [tupledValue, jtdType] = valueType
@@ -163,8 +164,8 @@ const getFlag = (x: any, flag: string) => {
 
 export const Invalid = <T>() => Result.Error<T, Error>(new Error("invalid"));
 
-export const types = factor({
-    optional: <V>(test: ValueType<V>): ValueType<Option<V>> => {
+export const Operators = factor({
+    optional: <V>(test: FactorOf<V>): FactorOf<Option<V>> => {
         const optional = (value?: V): Result<Option<V>, Error> => {
             if (typeof value === "undefined") {
                 const result = Result.Ok<Option<V>, Error>(Option.None<V>())
@@ -178,9 +179,41 @@ export const types = factor({
         }
         setFlag(optional, "optional", true);
         setJtdType(optional, (test as any).__jtdType);
-        return optional as any as ValueType<Option<V>>;
-    },
-    string: ((value: string) => typeof value === "string" ? Result.Ok(value) : Invalid) as ValueType<string>,
-    number: ((n: number) => typeof n === "number" ? Result.Ok(n) : Invalid) as ValueType<number>,
-    int: ((n: number) => Number.isInteger(n) ? Result.Ok(n) : Invalid) as ValueType<number>,
+        return optional as any as FactorOf<Option<V>>;
+    }
 })
+
+export const BaseFactors = factor({
+    boolean: ((b: boolean) => typeof b === "boolean" ? Result.Ok(b) : Invalid<boolean>()) as FactorOf<boolean>,
+    string: ((s: string) => typeof s === "string" ? Result.Ok(s) : Invalid<string>()) as FactorOf<string>,
+    number: ((n: number) => typeof n === "number" ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+})
+
+export const JtdFactors = {
+    boolean: BaseFactors.boolean,
+    string: BaseFactors.string,
+    ...factor({
+        timestamp: ((t: string) => typeof t === "string" ? Result.Ok(t) : Invalid<string>()) as FactorOf<string>,
+        float32: ((n: number) => typeof n === "number" ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+        float64: ((n: number) => typeof n === "number" ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+        int8: ((n: number) => Number.isInteger(n) && n >= -128 && n <= 127 ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+        uint8: ((n: number) => Number.isInteger(n) && n >= 0 && n <= 255 ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+        int16: ((n: number) => Number.isInteger(n) && n >= -32768 && n <= 32767 ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+        uint16: ((n: number) => Number.isInteger(n) && n >= 0 && n <= 65535 ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+        int32: ((n: number) => Number.isInteger(n) && n >= -2147483648 && n <= 2147483647 ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+        uint32: ((n: number) => Number.isInteger(n) && n >= 0 && n <= 4294967295 ? Result.Ok(n) : Invalid<number>()) as FactorOf<number>,
+    })
+}
+
+if (import.meta.vitest) {
+    const { describe, test, expect } = import.meta.vitest
+    describe("BaseFactors", () => {
+        test("boolean", () => {
+            const { boolean } = BaseFactors;
+            expect(boolean(true).isOk()).toBeTruthy();
+            expect(boolean(false).isOk()).toBeTruthy();
+            expect(boolean("badinput" as any).isError()).toBeTruthy();
+            expect(((boolean as any)()).isError()).toBeTruthy();
+        })
+    })
+}

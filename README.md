@@ -14,17 +14,6 @@ Where TypeScript has you **declare** types, typist let's you **create** them: `t
 
 ### 1: Create a Type
 
-<table border="0">
- <tr>
-    <td><b style="font-size:30px">Title</b></td>
-    <td><b style="font-size:30px">Title 2</b></td>
- </tr>
- <tr>
-    <td>Lorem ipsum ...</td>
-    <td>Lorem ipsum ...</td>
- </tr>
-</table>
-
 Let's look at a verbose example of a `Fruit` type.
 
 Without typist, we might start with a type definition:
@@ -38,9 +27,9 @@ type Fruit = {
 }
 ```
 
-With typist, we're going to create a type module _instead_. This module gives us safe ways to create, validate, and parse instances of `Fruit`.
+With typist we won't define a `type`. Instead, we're going to create a type module by invoking `type()` as a function. This type module gives us safe ways to create, validate, and parse instances of `Fruit`.
 
-To create the typist module, we import the `typist` function and pass it a type description:
+Import the `type()` function and pass it a type description:
 
 ```TypeScript
 import { type, types } from "@curlyben/typist"
@@ -54,7 +43,9 @@ const FruitModule = type({
 })
 ```
 
-You'll notice in the above example that there isn't an exportable fruit type. We don't always need a type, but if we do, we can capture one with the `InputOf<T>` or `TypeFrom<T>` utility like so:
+The `type?` optional fields have been rewritten as `optional(type)`. This is because typist uses functions to build types while keeping the syntax as close as possible to the type syntax of TypeScript.
+
+You'll also notice in the above example that there isn't an exportable fruit type. We don't always need a type, but if we do, we can capture one with the `InputOf<T>` or `TypeFrom<T>` utility. 
 
 ```TypeScript
 import { InputOf } from "@curlyben/typist"
@@ -69,20 +60,43 @@ In your IDE you'll notice that hovering over `Fruit` reveals that it is the shap
 
 ![](hover-fruit-vscode.png)
 
-Next, you've probably noticed that `type?` optional fields have been rewritten as `optional(type)`. This is because typist uses functions to build types while keeping the syntax as close as possible to the type syntax of TypeScript.
 
-```
-// 2: create things
-const apple = createFruit({
+### 2: Use a Type
+
+```TypeScript
+export type Fruit = TypeFrom<typeof FruitModule>
+const { create: fruit } = FruitModule;
+
+// use the create function to get a Result<Fruit, Error>:
+const apple = fruit({
     name: "apple",
     colour: "green",
     countryOfOrigin: "spain"
 })
-// ...and use them safely
+
+// use the native type you extract with TypeFrom<FruitModule>:
+const orange: Fruit = {
+    name: "orange",
+    colour: "orange",
+    countryOfOrigin: "spain"
+}
+
+// validate a Result<Fruit, Error> with match:
 apple.match({
     Ok: apple => eat(apple),
     Error: error => yell(error),
 })
+
+// use the create function to validate a native type:
+if (fruit(orange).isOk()) {
+    eat(orange)
+} else {
+    yell(new Error("something went wrong"))
+}
+
+```
+
+```
 
 // 2.5: create things
 export type Fruit = InputOf<typeof createFruit>
