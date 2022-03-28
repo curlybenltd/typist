@@ -12,6 +12,19 @@ Where TypeScript has you **declare** types, typist let's you **create** them: `t
 
 ## How To: A Fruit Type
 
+### 1: Create a Type
+
+<table border="0">
+ <tr>
+    <td><b style="font-size:30px">Title</b></td>
+    <td><b style="font-size:30px">Title 2</b></td>
+ </tr>
+ <tr>
+    <td>Lorem ipsum ...</td>
+    <td>Lorem ipsum ...</td>
+ </tr>
+</table>
+
 Let's look at a verbose example of a `Fruit` type.
 
 Without typist, we might start with a type definition:
