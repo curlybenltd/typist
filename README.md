@@ -1,5 +1,14 @@
 # typist
 
+---
+**OH HI THERE**
+
+⚠️ I may or may never return to this project because [zod](https://github.com/colinhacks/zod#basic-usage) does 99% of what I wanted to achieve here. If you're looking for production ready runtime type validator for JavaScript/TypeScript, check it out.
+
+💡 If you go with zod, and prefer ADTs over exceptions, add [zod-match](https://github.com/benbenbenbenbenben/zod-match) too.
+
+---
+
 ### Pleasant Runtime Types for JavaScript and TypeScript
 
 Runtime types don't exist in JavaScript (or TypeScript) and there are lots of awful solutions that make you write hellish schemas.
